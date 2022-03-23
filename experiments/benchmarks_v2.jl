@@ -35,22 +35,22 @@ num_feat = Int(100)
 X = rand(nobs, num_feat)
 Y = rand(size(X, 1))
 
-# @info "xgboost train:"
-# @time m_xgb = xgboost(X, nrounds, label=Y, param=params_xgb, metrics=metrics, nthread=nthread, silent=1);
-# @btime xgboost($X, $nrounds, label=$Y, param=$params_xgb, metrics=$metrics, nthread=$nthread, silent=1);
-# @info "xgboost predict:"
-# @time pred_xgb = XGBoost.predict(m_xgb, X);
-# @btime XGBoost.predict($m_xgb, $X);
+@info "xgboost train:"
+@time m_xgb = xgboost(X, nrounds, label=Y, param=params_xgb, metrics=metrics, nthread=nthread, silent=1);
+@btime xgboost($X, $nrounds, label=$Y, param=$params_xgb, metrics=$metrics, nthread=$nthread, silent=1);
+@info "xgboost predict:"
+@time pred_xgb = XGBoost.predict(m_xgb, X);
+@btime XGBoost.predict($m_xgb, $X);
 
-# @info "evotrees train CPU:"
-# params_evo.device = "cpu"
-# @time m_evo = fit_evotree(params_evo, X, Y);
-# @btime fit_evotree($params_evo, $X, $Y);
-# @info "evotrees predict CPU:"
-# @time pred_evo = EvoTrees.predict(m_evo, X);
-# @btime EvoTrees.predict($m_evo, $X);
+@info "evotrees train CPU:"
+params_evo.device = "cpu"
+@time m_evo = fit_evotree(params_evo, X, Y);
+@btime fit_evotree($params_evo, $X, $Y);
+@info "evotrees predict CPU:"
+@time pred_evo = EvoTrees.predict(m_evo, X);
+@btime EvoTrees.predict($m_evo, $X);
 
-# CUDA.allowscalar(true)
+# CUDA.allowscalar(false)
 @info "evotrees train GPU:"
 params_evo.device = "gpu"
 @time m_evo_gpu = fit_evotree(params_evo, X, Y);
