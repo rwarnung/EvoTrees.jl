@@ -29,7 +29,7 @@ mutable struct EvoTreeRegressor{T<:AbstractFloat,U<:ModelType,S<:Int} <: MLJMode
     nbins::S
     α::T
     metric::Symbol
-    mask::Pair
+    mask
     rng
     device
 end
@@ -48,7 +48,7 @@ function EvoTreeRegressor(;
     nbins = 64,
     α = 0.5,
     metric = :mse,
-    mask::Pair,
+    mask = nothing,
     rng = 123,
     device = "cpu")
 
@@ -83,7 +83,7 @@ mutable struct EvoTreeCount{T<:AbstractFloat,U<:ModelType,S<:Int} <: MLJModelInt
     nbins::S
     α::T
     metric::Symbol
-    mask::Pair
+    mask
     rng
     device
 end
@@ -102,7 +102,7 @@ function EvoTreeCount(;
     nbins = 64,
     α = 0.5,
     metric = :poisson,
-    mask::Pair,
+    mask = nothing,
     rng = 123,
     device = "cpu")
 
@@ -130,7 +130,7 @@ mutable struct EvoTreeClassifier{T<:AbstractFloat,U<:ModelType,S<:Int} <: MLJMod
     nbins::S
     α::T
     metric::Symbol
-    mask::Pair
+    mask
     rng
     device
 end
@@ -149,7 +149,7 @@ function EvoTreeClassifier(;
     nbins = 64,
     α = 0.5,
     metric = :mlogloss,
-    mask::Pair,
+    mask = nothing,
     rng = 123,
     device = "cpu")
 
@@ -177,7 +177,7 @@ mutable struct EvoTreeGaussian{T<:AbstractFloat,U<:ModelType,S<:Int} <: MLJModel
     nbins::S
     α::T
     metric::Symbol
-    mask::Pair
+    mask
     rng
     device
 end
@@ -196,7 +196,7 @@ function EvoTreeGaussian(;
     nbins = 64,
     α = 0.5,
     metric = :gaussian,
-    mask::Pair,
+    mask = nothing,
     rng = 123,
     device = "cpu")
 

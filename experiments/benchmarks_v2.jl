@@ -6,7 +6,8 @@ using BenchmarkTools
 using CUDA
 
 nrounds = 200
-nthread = 16
+nthread = Base.Threads.nthreads()
+@info nthread
 
 # xgboost aprams
 params_xgb = ["max_depth" => 5,
