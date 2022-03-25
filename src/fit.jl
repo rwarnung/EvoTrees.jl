@@ -1,6 +1,6 @@
 # initialise evotree
 function init_evotree(params::EvoTypes{T,U,S},
-    X::AbstractMatrix, Y::AbstractVector, W = nothing) where {T,U,S}
+    X::AbstractMatrix, Y::AbstractVector, W=nothing) where {T,U,S}
 
     K = 1
     levels = nothing
@@ -17,7 +17,7 @@ function init_evotree(params::EvoTypes{T,U,S},
             Y = UInt32.(CategoricalArrays.levelcode.(Y))
         else
             levels = sort(unique(Y))
-            yc = CategoricalVector(Y, levels = levels)
+            yc = CategoricalVector(Y, levels=levels)
             K = length(levels)
             μ = zeros(T, K)
             Y = UInt32.(CategoricalArrays.levelcode.(yc))
@@ -62,15 +62,15 @@ function init_evotree(params::EvoTypes{T,U,S},
     left = zeros(UInt32, length(nodes[1].𝑖))
     right = zeros(UInt32, length(nodes[1].𝑖))
 
-    cache = (params = deepcopy(params),
-        X = X, Y = Y, K = K,
-        nodes = nodes,
-        pred = pred,
-        𝑖_ = 𝑖_, 𝑗_ = 𝑗_, 𝑗 = 𝑗,
-        out = out, left = left, right = right,
-        δ𝑤 = δ𝑤,
-        edges = edges,
-        X_bin = X_bin)
+    cache = (params=deepcopy(params),
+        X=X, Y=Y, K=K,
+        nodes=nodes,
+        pred=pred,
+        𝑖_=𝑖_, 𝑗_=𝑗_, 𝑗=𝑗,
+        out=out, left=left, right=right,
+        δ𝑤=δ𝑤,
+        edges=edges,
+        X_bin=X_bin)
 
     cache.params.nrounds = 0
 
@@ -87,8 +87,8 @@ function grow_evotree!(evotree::GBTree{T}, cache) where {T,S}
     # loop over nrounds
     for i = 1:δnrounds
         # select random rows and cols
-        sample!(params.rng, cache.𝑖_, cache.nodes[1].𝑖, replace = false, ordered = true)
-        sample!(params.rng, cache.𝑗_, cache.𝑗, replace = false, ordered = true)
+        sample!(params.rng, cache.𝑖_, cache.nodes[1].𝑖, replace=false, ordered=true)
+        sample!(params.rng, cache.𝑗_, cache.𝑗, replace=false, ordered=true)
 
         # build a new tree
         update_grads!(params.loss, cache.δ𝑤, cache.pred, cache.Y, params.α)
@@ -127,27 +127,19 @@ function grow_tree!(
     depth = 1
 
     # initialize summary stats
-    nodes[1].∑ .= vec(sum(δ𝑤[:, nodes[1].𝑖], dims = 2))
+    nodes[1].∑ .= vec(sum(δ𝑤[:, nodes[1].𝑖], dims=2))
     nodes[1].gain = get_gain(params.loss, nodes[1].∑, params.λ, K)
     # grow while there are remaining active nodes
     while length(n_current) > 0 && depth <= params.max_depth
         offset = 0 # identifies breakpoint for each node set within a depth
+        
         if depth < params.max_depth
-            for n_id ∈ 1:length(n_current)
-                n = n_current[n_id]
-                if n_id % 2 == 0
-                    if n % 2 == 0
-                        nodes[n].h .= nodes[n>>1].h .- nodes[n+1].h
-                    else
-                        nodes[n].h .= nodes[n>>1].h .- nodes[n-1].h
-                    end
-                else
-                    update_hist!(params.loss, nodes[n].h, δ𝑤, X_bin, nodes[n].𝑖, 𝑗, K)
-                end
+            for n ∈ n_current
+                update_hist!(params.loss, nodes[n].h, δ𝑤, X_bin, nodes[n].𝑖, 𝑗, K)
             end
         end
 
-        for n ∈ sort(n_current)
+        for n ∈ n_current
             if depth == params.max_depth || nodes[n].∑[end] <= params.min_weight
                 pred_leaf_cpu!(params.loss, tree.pred, n, nodes[n].∑, params, K, δ𝑤, nodes[n].𝑖)
             else
@@ -173,13 +165,8 @@ function grow_tree!(
                     nodes[n<<1].gain = get_gain(params.loss, nodes[n<<1].∑, params.λ, K)
                     nodes[n<<1+1].gain = get_gain(params.loss, nodes[n<<1+1].∑, params.λ, K)
 
-                    if length(_right) >= length(_left)
-                        push!(n_next, n << 1)
-                        push!(n_next, n << 1 + 1)
-                    else
-                        push!(n_next, n << 1 + 1)
-                        push!(n_next, n << 1)
-                    end
+                    push!(n_next, n << 1)
+                    push!(n_next, n << 1 + 1)
                     popfirst!(n_next)
                     # println("n_next split post: ", n, " | ", n_next)
                 end
@@ -217,11 +204,11 @@ Main training function. Performorms model fitting given configuration `params`, 
 - `print_every_n`: sets at which frequency logging info should be printed. 
 - `verbosity`: set to 1 to print logging info during training.
 """
-function fit_evotree(params, X_train, Y_train, W_train = nothing;
-    X_eval = nothing, Y_eval = nothing, W_eval = nothing,
-    early_stopping_rounds = 9999,
-    print_every_n = 9999,
-    verbosity = 1)
+function fit_evotree(params, X_train, Y_train, W_train=nothing;
+    X_eval=nothing, Y_eval=nothing, W_eval=nothing,
+    early_stopping_rounds=9999,
+    print_every_n=9999,
+    verbosity=1)
 
     # initialize metric
     iter_since_best = 0
