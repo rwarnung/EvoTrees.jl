@@ -135,7 +135,7 @@ function grow_tree!(
 
         # update histograms
         if depth < params.max_depth
-            if params.mask !== nothing && depth <= params.mask[2][end]
+            if params.mask !== nothing && depth <= params.mask[2]::Int
                 𝑗 = sample(params.rng, setdiff(𝑗_, params.mask[1]), ceil(Int, params.colsample * (length(𝑗_) - length(params.mask[1]))), replace=false, ordered=true)
             else
                 𝑗 = sample(params.rng, 𝑗_, ceil(Int, params.colsample * length(𝑗_)), replace=false, ordered=true)

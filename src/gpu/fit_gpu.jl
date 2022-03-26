@@ -136,7 +136,7 @@ function grow_tree_gpu!(
     while length(n_current) > 0 && depth <= params.max_depth
         offset = 0 # identifies breakpoint for each node set within a depth
         if depth < params.max_depth
-            if params.mask !== nothing && depth <= params.mask[2][end]
+            if params.mask !== nothing && depth <= params.mask[2]::Int
                 𝑗 = CuVector(sample(params.rng, setdiff(𝑗_, params.mask[1]), ceil(Int, params.colsample * (length(𝑗_) - length(params.mask[1]))), replace=false, ordered=true))
             else
                 𝑗 = CuVector(sample(params.rng, 𝑗_, ceil(Int, params.colsample * length(𝑗_)), replace=false, ordered=true))
