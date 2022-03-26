@@ -26,18 +26,17 @@ Y_train, Y_eval = Y[𝑖_train], Y[𝑖_eval]
 #############################
 params1 = EvoTreeRegressor(T=Float32,
     loss=:linear, metric=:none,
-    nrounds=100,
-    mask = 1:90 => 1:3,
+    nrounds=200,
+    mask = 1:50 => 1:3,
     λ = 1.0, γ=0.1, η=0.1,
     max_depth = 6, min_weight = 1.0,
-    rowsample=0.5, colsample=0.5, nbins=64)
+    rowsample=0.5, colsample=0.5, nbins=64,
+    device = "gpu")
 
 # asus laptopt: for 1.25e6 no eval: 9.650007 seconds (893.53 k allocations: 2.391 GiB, 5.52% gc time)
 @time model = fit_evotree(params1, X_train, Y_train);
+
 @btime model = fit_evotree($params1, $X_train, $Y_train);
 @time pred_train = predict(model, X_train);
 @btime pred_train = predict(model, X_train);
-gain = importance(model, 1:100)
-
-@time model, cache = EvoTrees.init_evotree(params1, X_train, Y_train);
-@time EvoTrees.grow_evotree!(model, cache);
+var_importance = importance(model, 1:100)

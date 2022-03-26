@@ -96,7 +96,7 @@ function grow_evotree!(evotree::GBTreeGPU{T}, cache) where {T}
         update_grads_gpu!(params.loss, cache.δ𝑤, cache.pred, cache.Y)
         # # assign a root and grow tree
         tree = TreeGPU(params.max_depth, evotree.K, zero(T))
-        grow_tree_gpu!(tree, cache.nodes, params, cache.δ𝑤, cache.edges, CuVector(cache.𝑗), cache.out, cache.left, cache.right, cache.X_bin, cache.K)
+        grow_tree_gpu!(tree, cache.nodes, params, cache.δ𝑤, cache.edges, cache.𝑗_, cache.out, cache.left, cache.right, cache.X_bin, cache.K)
         push!(evotree.trees, tree)
         # update predctions
         predict!(params.loss, cache.pred, tree, cache.X, cache.K)
@@ -113,7 +113,7 @@ function grow_tree_gpu!(
     params::EvoTypes{T,U,S},
     δ𝑤::AbstractMatrix{T},
     edges,
-    𝑗, out, left, right,
+    𝑗_, out, left, right,
     X_bin::AbstractMatrix, K) where {T,U,S}
 
     n_next = [1]
@@ -136,19 +136,13 @@ function grow_tree_gpu!(
     while length(n_current) > 0 && depth <= params.max_depth
         offset = 0 # identifies breakpoint for each node set within a depth
         if depth < params.max_depth
-            for n_id ∈ 1:length(n_current)
-                n = n_current[n_id]
-                if n_id % 2 == 0
-                    if n % 2 == 0
-                        nodes[n].h .= nodes[n>>1].h .- nodes[n+1].h
-                        CUDA.synchronize()
-                    else
-                        nodes[n].h .= nodes[n>>1].h .- nodes[n-1].h
-                        CUDA.synchronize()
-                    end
-                else
-                    update_hist_gpu!(params.loss, nodes[n].h, δ𝑤, X_bin, nodes[n].𝑖, 𝑗, K)
-                end
+            if params.mask !== nothing && depth <= params.mask[2][end]
+                𝑗 = CuVector(sample(params.rng, setdiff(𝑗_, params.mask[1]), ceil(Int, params.colsample * (length(𝑗_) - length(params.mask[1]))), replace=false, ordered=true))
+            else
+                𝑗 = CuVector(sample(params.rng, 𝑗_, ceil(Int, params.colsample * length(𝑗_)), replace=false, ordered=true))
+            end
+            for n ∈ n_current
+                update_hist_gpu!(params.loss, nodes[n].h, δ𝑤, X_bin, nodes[n].𝑖, 𝑗, K)
             end
         end
 

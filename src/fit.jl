@@ -88,13 +88,13 @@ function grow_evotree!(evotree::GBTree{T}, cache) where {T,S}
     for i = 1:δnrounds
         # select random rows and cols
         sample!(params.rng, cache.𝑖_, cache.nodes[1].𝑖, replace=false, ordered=true)
-        sample!(params.rng, cache.𝑗_, cache.𝑗, replace=false, ordered=true)
+        # sample!(params.rng, cache.𝑗_, cache.𝑗, replace=false, ordered=true)
 
         # build a new tree
         update_grads!(params.loss, cache.δ𝑤, cache.pred, cache.Y, params.α)
         # assign a root and grow tree
         tree = Tree(params.max_depth, evotree.K, zero(T))
-        grow_tree!(tree, cache.nodes, params, cache.δ𝑤, cache.edges, cache.𝑗, cache.out, cache.left, cache.right, cache.X_bin, cache.K)
+        grow_tree!(tree, cache.nodes, params, cache.δ𝑤, cache.edges, cache.𝑗_, cache.out, cache.left, cache.right, cache.X_bin, cache.K)
         push!(evotree.trees, tree)
         predict!(params.loss, cache.pred, tree, cache.X, cache.K)
 
@@ -110,12 +110,12 @@ function grow_tree!(
     params::EvoTypes{T,U,S},
     δ𝑤::Matrix{T},
     edges,
-    𝑗, out, left, right,
+    𝑗_, out, left, right,
     X_bin::AbstractMatrix, K) where {T,U,S}
 
     # reset nodes
     @threads for n in eachindex(nodes)
-        [nodes[n].h[j] .= 0 for j in 𝑗]
+        [nodes[n].h[j] .= 0 for j in 𝑗_]
         nodes[n].∑ .= 0
         nodes[n].gain = 0
         fill!(nodes[n].gains, -Inf)
@@ -132,8 +132,15 @@ function grow_tree!(
     # grow while there are remaining active nodes
     while length(n_current) > 0 && depth <= params.max_depth
         offset = 0 # identifies breakpoint for each node set within a depth
-        
+
+        # update histograms
         if depth < params.max_depth
+            if params.mask !== nothing && depth <= params.mask[2][end]
+                𝑗 = sample(params.rng, setdiff(𝑗_, params.mask[1]), ceil(Int, params.colsample * (length(𝑗_) - length(params.mask[1]))), replace=false, ordered=true)
+            else
+                𝑗 = sample(params.rng, 𝑗_, ceil(Int, params.colsample * length(𝑗_)), replace=false, ordered=true)
+            end
+            # println("𝑗 list: ", 𝑗)
             for n ∈ n_current
                 update_hist!(params.loss, nodes[n].h, δ𝑤, X_bin, nodes[n].𝑖, 𝑗, K)
             end
@@ -143,7 +150,6 @@ function grow_tree!(
             if depth == params.max_depth || nodes[n].∑[end] <= params.min_weight
                 pred_leaf_cpu!(params.loss, tree.pred, n, nodes[n].∑, params, K, δ𝑤, nodes[n].𝑖)
             else
-                # histogram subtraction
                 update_gains!(params.loss, nodes[n], 𝑗, params, K)
                 best = findmax(nodes[n].gains)
                 if best[2][1] != params.nbins && best[1] > nodes[n].gain + params.γ
