@@ -58,26 +58,15 @@ model_c, cache_c = EvoTrees.init_evotree(params_c; x_train, y_train);
 # initialize from cache
 X_size = size(cache_c.x_bin)
 
-# select random rows and cols
-sample!(params_c.rng, cache_c.𝑖_, cache_c.nodes[1].𝑖, replace = false, ordered = true);
-sample!(params_c.rng, cache_c.𝑗_, cache_c.𝑗, replace = false, ordered = true);
-# @btime sample!(params_c.rng, cache_c.𝑖_, cache_c.nodes[1].𝑖, replace=false, ordered=true);
-# @btime sample!(params_c.rng, cache_c.𝑗_, cache_c.𝑗, replace=false, ordered=true);
-
-𝑖 = cache_c.nodes[1].𝑖
 𝑗 = cache_c.𝑗
 
 L = EvoTrees.Linear
 K = 1
 T = Float32
 # build a new tree
-# 897.800 μs (6 allocations: 736 bytes)
-@time EvoTrees.update_grads!(L, cache_c.δ𝑤, cache_c.pred, cache_c.y; alpha = params_c.alpha)
-# @btime EvoTrees.update_grads!($params_c.loss, $cache_c.δ𝑤, $cache_c.pred_cpu, $cache_c.Y_cpu, $params_c.α)
-# ∑ = vec(sum(cache_c.δ[𝑖,:], dims=1))
-# gain = EvoTrees.get_gain(params_c.loss, ∑, params_c.λ)
-# assign a root and grow tree
-# train_nodes[1] = EvoTrees.TrainNode(UInt32(0), UInt32(1), ∑, gain)
+# 100.736 μs (73 allocations: 6.33 KiB)
+@time EvoTrees.update_grads!(cache_c.δ𝑤, cache_c.pred, cache_c.y, params_c)
+# @btime EvoTrees.update_grads!($cache_c.δ𝑤, $cache_c.pred, $cache_c.y, $params_c)
 
 # 62.530 ms (7229 allocations: 17.43 MiB)
 # 1.25e5: 9.187 ms (7358 allocations: 2.46 MiB)
@@ -108,9 +97,8 @@ tree = EvoTrees.Tree{L,K,T}(params_c.max_depth)
     cache_c.x_bin,
     cache_c.monotone_constraints,
 )
-
 @btime EvoTrees.grow_tree!(
-    $EvoTrees.Tree(params_c.max_depth, model_c.K, zero(typeof(params_c.λ))),
+    $EvoTrees.Tree(params_c.max_depth,),
     $cache_c.nodes,
     $params_c,
     $cache_c.δ𝑤,
@@ -122,65 +110,19 @@ tree = EvoTrees.Tree{L,K,T}(params_c.max_depth)
     $cache_c.X_bin,
     $cache_c.K,
 )
-
-@time EvoTrees.grow_tree!(
-    EvoTrees.Tree(params_c.max_depth, model_c.K, params_c.λ),
-    params_c,
-    cache_c.δ,
-    cache_c.hist,
-    cache_c.histL,
-    cache_c.histR,
-    cache_c.gains,
-    cache_c.edges,
-    𝑖,
-    𝑗,
-    𝑛,
-    cache_c.X_bin,
-);
-@btime EvoTrees.grow_tree!(
-    EvoTrees.Tree($params_c.max_depth, $model_c.K, $params_c.λ),
-    $params_c,
-    $cache_c.δ,
-    $cache_c.hist,
-    $cache_c.histL,
-    $cache_c.histR,
-    $cache_c.gains,
-    $cache_c.edges,
-    $𝑖,
-    $𝑗,
-    $𝑛,
-    $cache_c.X_bin,
-);
-@code_warntype EvoTrees.grow_tree!(
-    EvoTrees.Tree(params_c.max_depth, model_c.K, params_c.λ),
-    params_c,
-    cache_c.δ,
-    cache_c.hist,
-    cache_c.histL,
-    cache_c.histR,
-    cache_c.gains,
-    cache_c.edges,
-    𝑖,
-    𝑗,
-    𝑛,
-    cache_c.X_bin,
-);
-
 # push!(model_c.trees, tree)
 # 1.883 ms (83 allocations: 13.77 KiB)
 @btime EvoTrees.predict!(model_c.params.loss, cache_c.pred_cpu, tree, cache_c.X, model_c.K)
 
-δ𝑤, edges, x_bin, nodes, out, left, right = cache_c.δ𝑤,
+δ𝑤, edges, x_bin, nodes, nidx = cache_c.δ𝑤,
 cache_c.edges,
 cache_c.x_bin,
 cache_c.nodes,
-cache_c.out,
-cache_c.left,
-cache_c.right;
+cache_c.nidx;
 
 # 7.914 ms (49 allocations: 5.36 KiB)
-@time EvoTrees.update_hist!(L, nodes[1].h, δ𝑤, x_bin, 𝑖, 𝑗, K)
-@btime EvoTrees.update_hist!($L, $nodes[1].h, $δ𝑤, $x_bin, $𝑖, $𝑗, $K)
+@time EvoTrees.update_hist!(L, nodes, nidx, δ𝑤, x_bin, 𝑗, K)
+@btime EvoTrees.update_hist!($L, $nodes, $nidx, $δ𝑤, $x_bin, $𝑗, $K)
 @btime EvoTrees.update_hist!($nodes[1].h, $δ𝑤, $X_bin, $nodes[1].𝑖, $𝑗)
 @code_warntype EvoTrees.update_hist!(hist, δ, X_bin, 𝑖, 𝑗, 𝑛)
 
@@ -205,42 +147,6 @@ tree.feat[n] = best[2][2]
 Int.(tree.cond_bin[n])
 # tree.cond_bin[n] = 32
 
-# 204.900 μs (1 allocation: 96 bytes)
-offset = 0
-@time EvoTrees.split_set!(left, right, 𝑖, X_bin, tree.feat[n], tree.cond_bin[n], offset)
-@btime EvoTrees.split_set!(
-    $left,
-    $right,
-    $𝑖,
-    $X_bin,
-    $tree.feat[n],
-    $tree.cond_bin[n],
-    $offset,
-)
-@code_warntype EvoTrees.split_set!(left, right, 𝑖, X_bin, tree.feat[n], tree.cond_bin[n])
-
-# 1.25e5: 227.200 μs (22 allocations: 1.44 KiB)
-@time EvoTrees.split_set_threads!(
-    out,
-    left,
-    right,
-    𝑖,
-    X_bin,
-    tree.feat[n],
-    tree.cond_bin[n],
-    offset,
-)
-@btime EvoTrees.split_set_threads!(
-    $out,
-    $left,
-    $right,
-    $𝑖,
-    $X_bin,
-    $tree.feat[n],
-    $tree.cond_bin[n],
-    $offset,
-    Int(2e15),
-)
 
 ###################################################
 # GPU

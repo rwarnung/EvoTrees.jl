@@ -164,19 +164,22 @@ end
 """
 function update_hist!(
     ::Type{L},
-    hist::Vector{Vector{T}},
+    n::Vector{TrainNode{T}},
+    nidx::AbstractVector{S},
     δ𝑤::Matrix{T},
-    X_bin::Matrix{UInt8},
-    𝑖::AbstractVector{S},
+    x_bin::Matrix{UInt8},
     𝑗::AbstractVector{S},
     K,
 ) where {L<:GradientRegression,T,S}
     @threads for j in 𝑗
-        @inbounds @simd for i in 𝑖
-            hid = 3 * X_bin[i, j] - 2
-            hist[j][hid] += δ𝑤[1, i]
-            hist[j][hid+1] += δ𝑤[2, i]
-            hist[j][hid+2] += δ𝑤[3, i]
+        @inbounds @simd for i in eachindex(nidx)
+            nid = nidx[i]
+            if nid != 0
+                hid = 3 * x_bin[i, j] - 2
+                n[nid].h[j][hid] += δ𝑤[1, i]
+                n[nid].h[j][hid+1] += δ𝑤[2, i]
+                n[nid].h[j][hid+2] += δ𝑤[3, i]
+            end
         end
     end
     return nothing

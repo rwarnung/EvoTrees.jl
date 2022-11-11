@@ -94,7 +94,7 @@ Use `ntree_limit=N` to only predict with the first `N` trees.
 function predict(
     m::EvoTree{L,K,T},
     X::AbstractMatrix;
-    ntree_limit = length(m.trees),
+    ntree_limit=length(m.trees)
 ) where {L,K,T}
     pred = zeros(T, K, size(X, 1))
     ntrees = length(m.trees)
@@ -123,8 +123,6 @@ function pred_leaf_cpu!(
     n,
     ∑::Vector,
     params::EvoTypes{L,T},
-    δ𝑤,
-    𝑖,
 ) where {L<:GradientRegression,T}
     p[1, n] = -params.eta * ∑[1] / (∑[2] + params.lambda * ∑[3])
 end
@@ -136,7 +134,7 @@ function pred_scalar_cpu!(
 end
 
 # prediction in Leaf - MLE2P
-function pred_leaf_cpu!(p, n, ∑::Vector, params::EvoTypes{L,T}, δ𝑤, 𝑖) where {L<:MLE2P,T}
+function pred_leaf_cpu!(p, n, ∑::Vector, params::EvoTypes{L,T}) where {L<:MLE2P,T}
     p[1, n] = -params.eta * ∑[1] / (∑[3] + params.lambda * ∑[5])
     p[2, n] = -params.eta * ∑[2] / (∑[4] + params.lambda * ∑[5])
 end
@@ -150,8 +148,6 @@ function pred_leaf_cpu!(
     n,
     ∑::Vector,
     params::EvoTypes{L,T},
-    δ𝑤,
-    𝑖,
 ) where {L<:MultiClassRegression,T}
     K = size(p, 1)
     @inbounds for k = 1:K
@@ -160,25 +156,23 @@ function pred_leaf_cpu!(
 end
 
 # prediction in Leaf - QuantileRegression
-function pred_leaf_cpu!(
-    p,
-    n,
-    ∑::Vector,
-    params::EvoTypes{L,T},
-    δ𝑤,
-    𝑖,
-) where {L<:QuantileRegression,T}
-    p[1, n] = params.eta * quantile(δ𝑤[2, 𝑖], params.alpha) / (1 + params.lambda)
-end
+# function pred_leaf_cpu!(
+#     p,
+#     n,
+#     ∑::Vector,
+#     params::EvoTypes{L,T},
+#     δ𝑤,
+#     𝑖,
+# ) where {L<:QuantileRegression,T}
+#     p[1, n] = params.eta * quantile(δ𝑤[2, 𝑖], params.alpha) / (1 + params.lambda)
+# end
 
 # prediction in Leaf - L1Regression
 function pred_leaf_cpu!(
     p,
     n,
     ∑::Vector,
-    params::EvoTypes{L,T},
-    δ𝑤,
-    𝑖,
+    params::EvoTypes{L,T}
 ) where {L<:L1Regression,T}
     p[1, n] = params.eta * ∑[1] / (∑[3] * (1 + params.lambda))
 end
