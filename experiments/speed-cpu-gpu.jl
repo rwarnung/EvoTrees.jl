@@ -57,8 +57,7 @@ model_c, cache_c = EvoTrees.init_evotree(params_c; x_train, y_train);
 
 # initialize from cache
 X_size = size(cache_c.x_bin)
-
-𝑗 = cache_c.𝑗
+sample!(params_c.rng, cache_c.𝑗_, cache_c.𝑗, replace=false, ordered=true)
 
 L = EvoTrees.Linear
 K = 1
@@ -78,9 +77,6 @@ tree = EvoTrees.Tree{L,K,T}(params_c.max_depth)
     cache_c.δ𝑤,
     cache_c.edges,
     cache_c.𝑗,
-    cache_c.left,
-    cache_c.left,
-    cache_c.right,
     cache_c.x_bin,
     cache_c.monotone_constraints,
 )
@@ -91,9 +87,6 @@ tree = EvoTrees.Tree{L,K,T}(params_c.max_depth)
     cache_c.δ𝑤,
     cache_c.edges,
     cache_c.𝑗,
-    cache_c.left,
-    cache_c.left,
-    cache_c.right,
     cache_c.x_bin,
     cache_c.monotone_constraints,
 )
@@ -114,11 +107,12 @@ tree = EvoTrees.Tree{L,K,T}(params_c.max_depth)
 # 1.883 ms (83 allocations: 13.77 KiB)
 @btime EvoTrees.predict!(model_c.params.loss, cache_c.pred_cpu, tree, cache_c.X, model_c.K)
 
-δ𝑤, edges, x_bin, nodes, nidx = cache_c.δ𝑤,
+δ𝑤, edges, x_bin, nodes, nidx, 𝑗 = cache_c.δ𝑤,
 cache_c.edges,
 cache_c.x_bin,
 cache_c.nodes,
-cache_c.nidx;
+cache_c.nidx,
+cache_c.𝑗;
 
 # 7.914 ms (49 allocations: 5.36 KiB)
 @time EvoTrees.update_hist!(L, nodes, nidx, δ𝑤, x_bin, 𝑗, K)

@@ -172,13 +172,13 @@ function update_hist!(
     K,
 ) where {L<:GradientRegression,T,S}
     @threads for j in 𝑗
-        @inbounds @simd for i in eachindex(nidx)
+        @inbounds for i in eachindex(nidx)
             nid = nidx[i]
             if nid != 0
-                hid = 3 * x_bin[i, j] - 2
-                n[nid].h[j][hid] += δ𝑤[1, i]
-                n[nid].h[j][hid+1] += δ𝑤[2, i]
-                n[nid].h[j][hid+2] += δ𝑤[3, i]
+                hid = 3 * (x_bin[i, j] - 1)
+                # n[nid].h[j][hid+1] += δ𝑤[1, i]
+                # n[nid].h[j][hid+1] += δ𝑤[2, i]
+                # n[nid].h[j][hid+2] += δ𝑤[3, i]
             end
         end
     end
